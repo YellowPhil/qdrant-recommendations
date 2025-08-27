@@ -1,4 +1,5 @@
-use eyre::{Result, WrapErr};
+use super::{EmbeddingError, EmbeddingModel};
+use eyre::{WrapErr, eyre};
 use reqwest::Client;
 
 pub(crate) struct HuggingFace {
@@ -8,7 +9,7 @@ pub(crate) struct HuggingFace {
 }
 
 impl HuggingFace {
-    pub(crate) async fn new(api_key: String, endpoint: String) -> Result<Self> {
+    async fn new(api_key: String, endpoint: String) -> eyre::Result<Self> {
         let client = Client::new();
         client
             .get("https://huggingface.co/api/whoami-v2")
@@ -22,8 +23,11 @@ impl HuggingFace {
             client,
         })
     }
+}
 
-    pub(crate) async fn embed(&self, input: String) -> Result<Vec<f32>> {
+#[async_trait::async_trait]
+impl EmbeddingModel for HuggingFace {
+    async fn embed(&self, input: String) -> Result<Vec<f32>, EmbeddingError> {
         let response = self
             .client
             .post(&self.endpoint)
@@ -33,12 +37,12 @@ impl HuggingFace {
             }))
             .send()
             .await
-            .wrap_err("Failed to send request")?;
+            .map_err(|e| EmbeddingError::RequestError(eyre!("Failed to send request: {}", e)))?;
 
         let body = response
             .json::<Vec<f32>>()
             .await
-            .map_err(|e| eyre::eyre!("Failed to parse response: {}", e))?;
+            .map_err(|e| EmbeddingError::RequestError(eyre!("Failed to parse response: {}", e)))?;
         Ok(body)
     }
 }

@@ -352,6 +352,10 @@ dependencies = [
 ]
 
 [[package]]
+name = "daemon"
+version = "0.1.0"
+
+[[package]]
 name = "darling"
 version = "0.20.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -439,6 +443,17 @@ name = "either"
 version = "1.15.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "48c757948c5ede0e46177b7add2e67155f70e33c07fea8284df6576da70b3719"
+
+[[package]]
+name = "embedding"
+version = "0.1.0"
+dependencies = [
+ "async-trait",
+ "eyre",
+ "reqwest",
+ "serde_json",
+ "thiserror 2.0.16",
+]
 
 [[package]]
 name = "encoding_rs"
@@ -1802,6 +1817,7 @@ version = "0.1.0"
 dependencies = [
  "anyhow",
  "async-trait",
+ "embedding",
  "eyre",
  "mockall",
  "qdrant-client",

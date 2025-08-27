@@ -1,43 +1,31 @@
+use ell
+mbedding::{EmbeddingError, EmbeddingModel};
 use qdrant_client::Payload;
 
-use crate::{
-    hugging_face::HuggingFace,
-    storage::{TOPIC_CONTENT_KEY, TOPIC_NAME_KEY},
-};
+use crate::storage::{TOPIC_CONTENT_KEY, TOPIC_NAME_KEY};
 
-mod hugging_face;
 pub mod storage;
 
 #[derive(Debug, thiserror::Error)]
 pub enum TopicStorageError {
     #[error("Qdrant error: {0}")]
     QdrantError(String),
-    #[error("HuggingFace error: {0}")]
-    HuggingFaceError(eyre::Error),
+    #[error("Embedding error: {0}")]
+    EmbeddingError(EmbeddingError),
 }
 
 type Result<T> = std::result::Result<T, TopicStorageError>;
 
-pub struct TopicStorage {
+pub struct TopicStorage<T: EmbeddingModel> {
     storage: storage::Storage,
     qdrant_collection_name: String,
-    embedding_model: hugging_face::HuggingFace,
+    embedding_model: T,
 }
 
-impl TopicStorage {
-    pub async fn new(
-        qdrant_endpoint: &str,
-        embedding_model_api_key: &str,
-        embedding_model_endpoint: &str,
-    ) -> Result<Self> {
+impl<T: EmbeddingModel> TopicStorage<T> {
+    pub async fn new(qdrant_endpoint: &str, embedding_model: T) -> Result<Self> {
         let storage = storage::Storage::new(qdrant_endpoint)
             .map_err(|e| TopicStorageError::QdrantError(e.to_string()))?;
-        let embedding_model = HuggingFace::new(
-            embedding_model_api_key.to_string(),
-            embedding_model_endpoint.to_string(),
-        )
-        .await
-        .map_err(|e| TopicStorageError::HuggingFaceError(e))?;
         let qdrant_collection_name = "topic_storage".to_string();
 
         Ok(Self {
@@ -52,7 +40,7 @@ impl TopicStorage {
             .embedding_model
             .embed(content.to_string())
             .await
-            .map_err(|e| TopicStorageError::HuggingFaceError(e))?;
+            .map_err(|e| TopicStorageError::EmbeddingError(e))?;
 
         if !self
             .storage
@@ -74,7 +62,7 @@ impl TopicStorage {
             .embedding_model
             .embed(content.to_string())
             .await
-            .map_err(|e| TopicStorageError::HuggingFaceError(e))?;
+            .map_err(|e| TopicStorageError::EmbeddingError(e))?;
 
         let payload: Payload = serde_json::json!({
             TOPIC_NAME_KEY: topic_name,
@@ -104,7 +92,7 @@ impl TopicStorage {
             .embedding_model
             .embed(query.to_string())
             .await
-            .map_err(|e| TopicStorageError::HuggingFaceError(e))?;
+            .map_err(|e| TopicStorageError::EmbeddingError(e))?;
 
         let results = if let Some(topic) = topic {
             self.storage

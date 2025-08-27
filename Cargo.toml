@@ -4,7 +4,7 @@ version = "0.1.0"
 edition = "2024"
 
 [workspace]
-members = ["storage_client" ]
+members = [ "daemon", "embedding","storage_client" ]
 
 [dependencies]
 clap = { version = "4.5.46", features = ["derive"] }

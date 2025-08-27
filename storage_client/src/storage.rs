@@ -1,13 +1,11 @@
-use std::collections::HashMap;
-
 use eyre::{Result, WrapErr};
 use qdrant_client::{
     Payload, Qdrant,
     qdrant::{
-        CollectionExists, CollectionExistsRequest, Condition, CreateCollectionBuilder, Distance,
-        Filter, GetPointsBuilder, PointStruct, QueryPointsBuilder, RetrievedPoint,
-        ScalarQuantizationBuilder, ScoredPoint, ScrollPointsBuilder, SearchBatchPointsBuilder,
-        SearchPointsBuilder, UpsertPointsBuilder, Value, VectorParamsBuilder,
+         Condition, CreateCollectionBuilder, Distance,
+        Filter, PointStruct, QueryPointsBuilder, RetrievedPoint,
+        ScalarQuantizationBuilder, ScoredPoint, ScrollPointsBuilder, 
+        SearchPointsBuilder, UpsertPointsBuilder,  VectorParamsBuilder,
     },
 };
 
