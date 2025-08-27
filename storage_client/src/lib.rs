@@ -1,6 +1,6 @@
 use qdrant_client::Payload;
 
-use crate::hugging_face::HuggingFace;
+use crate::{hugging_face::HuggingFace, storage::{TOPIC_CONTENT_KEY, TOPIC_NAME_KEY}};
 
 mod hugging_face;
 pub mod storage;
@@ -74,7 +74,8 @@ impl TopicStorage {
             .map_err(|e| TopicStorageError::HuggingFaceError(e))?;
 
         let payload: Payload = serde_json::json!({
-            topic_name: content,
+            TOPIC_NAME_KEY: topic_name,
+            TOPIC_CONTENT_KEY: content,
         })
         .try_into()
         .map_err(|_| {
@@ -103,6 +104,14 @@ impl TopicStorage {
             .await
             .map_err(|e| TopicStorageError::QdrantError(e.to_string()))?;
 
-        Ok(results.iter().map(|r| r.payload.get("topic_name").unwrap().to_string()).collect())
+        Ok(results.iter().map(|r| r.payload.get(TOPIC_NAME_KEY).unwrap().to_string()).collect())
+    }
+    pub async fn list_topic(&self, topic: &str, limit: u32) -> Result<Vec<String>> {
+        let results = self
+            .storage
+            .list_points_by_topic(&self.qdrant_collection_name, topic, limit)
+            .await
+            .map_err(|e| TopicStorageError::QdrantError(e.to_string()))?;
+        Ok(results.iter().map(|r| r.payload.get(TOPIC_CONTENT_KEY).unwrap().to_string()).collect())
     }
 }

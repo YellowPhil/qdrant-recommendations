@@ -16,7 +16,8 @@ pub(crate) struct Storage {
     client: Qdrant,
 }
 
-const TOPIC_NAME_KEY: &str = "topic_name";
+pub(super) const TOPIC_NAME_KEY: &str = "topic_name";
+pub(super) const TOPIC_CONTENT_KEY: &str = "topic_content";
 
 impl Storage {
     pub(crate) fn new(endpoint: &str) -> Result<Self> {

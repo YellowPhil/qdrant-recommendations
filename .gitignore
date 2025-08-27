@@ -1,3 +1,4 @@
-client/target/
+storage_client/target/
 .envrc
 qdrant_storage/
+target/

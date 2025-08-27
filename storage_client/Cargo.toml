@@ -1,5 +1,5 @@
 [package]
-name = "client"
+name = "storage_client"
 version = "0.1.0"
 edition = "2024"
 
@@ -12,3 +12,8 @@ serde_json = "1.0.143"
 thiserror = "2.0.16"
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
 tonic = "0.14.1"
+
+[dev-dependencies]
+mockall = "0.12"
+async-trait = "0.1"
+uuid = { version = "1.18.0", features = ["v4"] }

@@ -38,7 +38,7 @@ impl HuggingFace {
         let body = response
             .json::<Vec<f32>>()
             .await
-            .wrap_err("Failed to parse response")?;
+            .map_err(|e| eyre::eyre!("Failed to parse response: {}", e))?;
         Ok(body)
     }
 }

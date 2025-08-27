@@ -1,0 +1,13 @@
+[package]
+name = "qdrant_recommendations"
+version = "0.1.0"
+edition = "2024"
+
+[workspace]
+members = ["storage_client" ]
+
+[dependencies]
+clap = { version = "4.5.46", features = ["derive"] }
+eyre = "0.6.12"
+storage_client = { path = "storage_client" }
+tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
