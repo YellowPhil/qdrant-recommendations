@@ -10,10 +10,13 @@ struct Cli {
     #[command(subcommand)]
     command: Commands,
     
+    // Qdrant endpoint
     #[arg(long, short, default_value = "http://localhost:6334")]
     qdrant_endpoint: String,
+    // Hugging Face API key
     #[arg(long)]
     hf_api_key: String,
+    // Hugging Face endpoint
     #[arg(long, default_value = "https://router.huggingface.co/hf-inference/models/BAAI/bge-base-en-v1.5/pipeline/feature-extraction")]
     hf_endpoint: String,
 }
@@ -38,14 +41,17 @@ enum IdeaCommands {
     
     Search {
         #[arg(short, long)]
-        topic: String,
+        topic: Option<String>,
         
         #[arg(short, long)]
         query: String,
+
+        #[arg(short, long, default_value = "10")]
+        limit: u64,
     },
     
     List {
-        #[arg(short, long)]
+        #[arg(short, long, required = true)]
         topic: String,
         
         #[arg(short, long, default_value = "10")]
@@ -72,9 +78,14 @@ async fn main() -> Result<()> {
                     println!("✅ Topic '{}' created successfully!", topic);
                 }
                 
-                IdeaCommands::Search { topic, query } => {
-                    println!("Searching in topic '{}' for: {}", topic, query);
-                    let results = storage.search_topic(&topic, &query).await?;
+                IdeaCommands::Search { topic, query, limit } => {
+                    let results = if let Some(topic) = topic {
+                        println!("Searching in topic '{}' for: {}", topic, query);
+                        storage.search_topic(Some(&topic), &query, limit).await?
+                    } else {
+                        println!("Searching for: {}", query);
+                        storage.search_topic(None, &query, limit).await?
+                    };
                     
                     if results.is_empty() {
                         println!("No results found.");

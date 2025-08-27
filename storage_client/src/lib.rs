@@ -1,6 +1,9 @@
 use qdrant_client::Payload;
 
-use crate::{hugging_face::HuggingFace, storage::{TOPIC_CONTENT_KEY, TOPIC_NAME_KEY}};
+use crate::{
+    hugging_face::HuggingFace,
+    storage::{TOPIC_CONTENT_KEY, TOPIC_NAME_KEY},
+};
 
 mod hugging_face;
 pub mod storage;
@@ -91,20 +94,33 @@ impl TopicStorage {
 
         Ok(())
     }
-    pub async fn search_topic(&self, topic: &str,query: &str) -> Result<Vec<String>> {
+    pub async fn search_topic(
+        &self,
+        topic: Option<&str>,
+        query: &str,
+        limit: u64,
+    ) -> Result<Vec<String>> {
         let embedding = self
             .embedding_model
             .embed(query.to_string())
             .await
             .map_err(|e| TopicStorageError::HuggingFaceError(e))?;
 
-        let results = self
-            .storage
-            .get_points_by_topic(&self.qdrant_collection_name, topic, embedding)
-            .await
-            .map_err(|e| TopicStorageError::QdrantError(e.to_string()))?;
-
-        Ok(results.iter().map(|r| r.payload.get(TOPIC_NAME_KEY).unwrap().to_string()).collect())
+        let results = if let Some(topic) = topic {
+            self.storage
+                .get_points_by_topic(&self.qdrant_collection_name, topic, embedding)
+                .await
+                .map_err(|e| TopicStorageError::QdrantError(e.to_string()))?
+        } else {
+            self.storage
+                .search_points(&self.qdrant_collection_name, embedding, limit)
+                .await
+                .map_err(|e| TopicStorageError::QdrantError(e.to_string()))?
+        };
+        Ok(results
+            .iter()
+            .map(|r| r.payload.get(TOPIC_CONTENT_KEY).unwrap().to_string())
+            .collect())
     }
     pub async fn list_topic(&self, topic: &str, limit: u32) -> Result<Vec<String>> {
         let results = self
@@ -112,6 +128,9 @@ impl TopicStorage {
             .list_points_by_topic(&self.qdrant_collection_name, topic, limit)
             .await
             .map_err(|e| TopicStorageError::QdrantError(e.to_string()))?;
-        Ok(results.iter().map(|r| r.payload.get(TOPIC_CONTENT_KEY).unwrap().to_string()).collect())
+        Ok(results
+            .iter()
+            .map(|r| r.payload.get(TOPIC_CONTENT_KEY).unwrap().to_string())
+            .collect())
     }
 }

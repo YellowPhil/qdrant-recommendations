@@ -106,6 +106,24 @@ impl Storage {
         Ok(response.result)
     }
 
+    pub(crate) async fn search_points(
+        &self,
+        collection_name: &str,
+        query: Vec<f32>,
+        limit: u64,
+    ) -> Result<Vec<ScoredPoint>> {
+        let response = self
+            .client
+            .search_points(
+                SearchPointsBuilder::new(collection_name, query, limit)
+                    .with_vectors(false)
+                    .with_payload(true)
+            )
+            .await
+            .wrap_err("Failed to search points")?;
+        Ok(response.result)
+    }
+
     pub(crate) async fn get_collection_info(
         &self,
         collection_name: &str,
