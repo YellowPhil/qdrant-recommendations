@@ -4,10 +4,10 @@ use eyre::{Result, WrapErr};
 use qdrant_client::{
     Payload, Qdrant,
     qdrant::{
-        Condition, CreateCollectionBuilder, Distance, Filter, GetPointsBuilder, PointStruct,
-        QueryPointsBuilder, RetrievedPoint, ScalarQuantizationBuilder, ScoredPoint,
-        ScrollPointsBuilder, SearchBatchPointsBuilder, SearchPointsBuilder, UpsertPointsBuilder,
-        Value, VectorParamsBuilder,
+        CollectionExists, CollectionExistsRequest, Condition, CreateCollectionBuilder, Distance,
+        Filter, GetPointsBuilder, PointStruct, QueryPointsBuilder, RetrievedPoint,
+        ScalarQuantizationBuilder, ScoredPoint, ScrollPointsBuilder, SearchBatchPointsBuilder,
+        SearchPointsBuilder, UpsertPointsBuilder, Value, VectorParamsBuilder,
     },
 };
 
@@ -108,13 +108,13 @@ impl Storage {
     pub(crate) async fn get_collection_info(
         &self,
         collection_name: &str,
-    ) -> Result<qdrant_client::qdrant::CollectionInfo> {
+    ) -> Result<Option<qdrant_client::qdrant::CollectionInfo>> {
         let info = self
             .client
             .collection_info(collection_name)
             .await
             .wrap_err("Failed to get collection info")?;
-        Ok(info.result.unwrap())
+        Ok(info.result)
     }
 
     pub(crate) async fn delete_collection(&self, collection_name: &str) -> Result<()> {
@@ -127,9 +127,133 @@ impl Storage {
     }
 
     pub(crate) async fn collection_exists(&self, collection_name: &str) -> Result<bool> {
-        match self.get_collection_info(collection_name).await {
-            Ok(_) => Ok(true),
-            Err(_) => Ok(false),
-        }
+        let response = self
+            .client
+            .collection_exists(collection_name)
+            .await
+            .wrap_err("Failed to check if collection exists")?;
+        Ok(response)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::collections::HashMap;
+    use uuid::Uuid;
+
+    #[tokio::test]
+    async fn test_create_collection() {
+        let storage = Storage::new("http://localhost:6334").unwrap();
+        let collection_name = format!("test_collection_{}", Uuid::new_v4());
+
+        storage
+            .create_collection(&collection_name, 3)
+            .await
+            .unwrap();
+
+        let collection_info = storage.get_collection_info(&collection_name).await.unwrap();
+        assert_eq!(collection_info.unwrap().points_count, Some(0));
+
+        storage.delete_collection(&collection_name).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_upsert_point() {
+        let storage = Storage::new("http://localhost:6334").unwrap();
+        let collection_name = format!("test_collection_{}", Uuid::new_v4());
+
+        storage
+            .create_collection(&collection_name, 3)
+            .await
+            .unwrap();
+
+        assert_eq!(
+            storage.collection_exists(&collection_name).await.unwrap(),
+            true
+        );
+
+        storage
+            .upsert_point(
+                &collection_name,
+                vec![1.0, 2.0, 3.0],
+                serde_json::json!({
+                    "key": "value"
+                })
+                .try_into()
+                .unwrap(),
+            )
+            .await
+            .unwrap();
+        let collection_info = storage.get_collection_info(&collection_name).await.unwrap();
+        assert_eq!(collection_info.unwrap().points_count, Some(1));
+
+        storage.delete_collection(&collection_name).await.unwrap();
+    }
+
+    #[tokio::test]
+    async fn test_retrieve_point() {
+        let storage = Storage::new("http://localhost:6334").unwrap();
+        let collection_name = format!("test_collection_{}", Uuid::new_v4());
+
+        storage
+            .create_collection(&collection_name, 3)
+            .await
+            .unwrap();
+
+        let point = storage
+            .get_points_by_topic(&collection_name, "test_topic", vec![1.0, 2.0, 3.0])
+            .await
+            .unwrap();
+        assert_eq!(point.len(), 0);
+
+        storage
+            .upsert_point(
+                &collection_name,
+                vec![1.0, 2.0, 3.0],
+                serde_json::json!({
+                    TOPIC_NAME_KEY: "test_topic"
+                })
+                .try_into()
+                .unwrap(),
+            )
+            .await
+            .unwrap();
+        let point = storage
+            .get_points_by_topic(&collection_name, "test_topic", vec![1.0, 2.0, 3.0])
+            .await
+            .unwrap();
+        assert_eq!(point.len(), 1);
+
+        storage.delete_collection(&collection_name).await.unwrap();
+    }
+    #[tokio::test]
+    async fn test_scroll_points() {
+        let storage = Storage::new("http://localhost:6334").unwrap();
+        let collection_name = format!("test_collection_{}", Uuid::new_v4());
+
+        storage
+            .create_collection(&collection_name, 3)
+            .await
+            .unwrap();
+        storage
+            .upsert_point(
+                &collection_name,
+                vec![1.0, 2.0, 3.0],
+                serde_json::json!({
+                    TOPIC_NAME_KEY: "test_topic"
+                })
+                .try_into()
+                .unwrap(),
+            )
+            .await
+            .unwrap();
+        let points = storage
+            .list_points_by_topic(&collection_name, "test_topic", 10)
+            .await
+            .unwrap();
+        assert_eq!(points.len(), 1);
+
+        storage.delete_collection(&collection_name).await.unwrap();
     }
 }
