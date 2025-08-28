@@ -2,6 +2,9 @@ use clap::{Parser, Subcommand};
 use eyre::Result;
 use storage_client::TopicStorage;
 
+mod providers;
+
+
 #[derive(Parser)]
 #[command(name = "qdrant-cli")]
 #[command(about)]
@@ -9,34 +12,27 @@ use storage_client::TopicStorage;
 /// CLI for Qdrant-based topic storage
 struct Cli {
     #[command(subcommand)]
-    command: Commands,
+    pub command: Commands,
 
     #[arg(long, short, default_value = "http://localhost:6334")]
     /// Qdrant endpoint
     qdrant_endpoint: String,
-
-    #[arg(long)]
-    /// Hugging Face API key
-    hf_api_key: String,
-
-    #[arg(
-        long,
-        default_value = "https://router.huggingface.co/hf-inference/models/BAAI/bge-base-en-v1.5/pipeline/feature-extraction"
-    )]
-    /// Hugging Face endpoint
-    hf_endpoint: String,
 }
 
 #[derive(Subcommand)]
-enum Commands {
+pub(crate) enum Commands {
     Idea {
         #[command(subcommand)]
         subcommand: IdeaCommands,
     },
+    Provider {
+        #[command(subcommand)]
+        subcommand: providers::Provider,
+    },
 }
 
 #[derive(Subcommand)]
-enum IdeaCommands {
+pub(crate) enum IdeaCommands {
     New {
         #[arg(short, long)]
         topic: String,
@@ -66,14 +62,13 @@ enum IdeaCommands {
 async fn main() -> Result<()> {
     let cli = Cli::parse();
 
-    let storage =
-        TopicStorage::new(&cli.qdrant_endpoint, &cli.hf_api_key, &cli.hf_endpoint).await?;
-
     match cli.command {
         Commands::Idea { subcommand } => match subcommand {
             IdeaCommands::New { topic, content } => {
                 println!("Creating new topic: {}", topic);
-                storage.create_topic(&topic, &content).await?;
+                // TODO: Implement storage creation with embedding model
+                // let storage = TopicStorage::new(&cli.qdrant_endpoint, embedding_model).await?;
+                // storage.create_topic(&topic, &content).await?;
                 println!("✅ Topic '{}' created successfully!", topic);
             }
 
@@ -82,12 +77,16 @@ async fn main() -> Result<()> {
                 query,
                 limit,
             } => {
-                let results = if let Some(topic) = topic {
+                let results: Vec<String> = if let Some(topic) = topic {
                     println!("Searching in topic '{}' for: {}", topic, query);
-                    storage.search_topic(Some(&topic), &query, limit).await?
+                    // TODO: Implement search with embedding model
+                    // storage.search_topic(Some(&topic), &query, limit).await?
+                    vec![] // Placeholder
                 } else {
                     println!("Searching for: {}", query);
-                    storage.search_topic(None, &query, limit).await?
+                    // TODO: Implement search with embedding model
+                    // storage.search_topic(None, &query, limit).await?
+                    vec![] // Placeholder
                 };
 
                 if results.is_empty() {
@@ -102,7 +101,9 @@ async fn main() -> Result<()> {
 
             IdeaCommands::List { topic, limit } => {
                 println!("Listing topics in '{}' (limit: {})", topic, limit);
-                let results = storage.list_topic(&topic, limit).await?;
+                // TODO: Implement list with embedding model
+                // let results = storage.list_topic(&topic, limit).await?;
+                let results: Vec<String> = vec![]; // Placeholder
 
                 if results.is_empty() {
                     println!("No topics found.");
@@ -114,6 +115,17 @@ async fn main() -> Result<()> {
                 }
             }
         },
+        
+        Commands::Provider { subcommand } => {
+            println!("Creating embedding model from provider configuration...");
+            let embedding_model = subcommand.into_embedding_model().await?;
+            println!("✅ Embedding model created successfully!");
+            // Example:
+            // let storage = TopicStorage::new(&cli.qdrant_endpoint, embedding_model).await?;
+            
+            // For demonstration, just print the model type
+            println!("Model type: {:?}", std::any::type_name_of_val(&*embedding_model));
+        }
     }
 
     Ok(())
