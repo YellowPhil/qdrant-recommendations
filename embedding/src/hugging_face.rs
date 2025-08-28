@@ -2,14 +2,14 @@ use super::{EmbeddingError, EmbeddingModel};
 use eyre::{WrapErr, eyre};
 use reqwest::Client;
 
-pub(crate) struct HuggingFace {
+pub struct HuggingFace {
     api_key: String,
     endpoint: String,
     client: Client,
 }
 
 impl HuggingFace {
-    async fn new(api_key: String, endpoint: String) -> eyre::Result<Self> {
+    pub async fn new(api_key: String, endpoint: String) -> eyre::Result<Self> {
         let client = Client::new();
         client
             .get("https://huggingface.co/api/whoami-v2")
