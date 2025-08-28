@@ -1,4 +1,5 @@
 pub mod hugging_face;
+pub mod self_hosted;
 
 #[derive(Debug, thiserror::Error)]
 pub enum EmbeddingError {

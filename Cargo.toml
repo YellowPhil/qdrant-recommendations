@@ -9,5 +9,6 @@ members = [ "daemon", "embedding","storage_client" ]
 [dependencies]
 clap = { version = "4.5.46", features = ["derive"] }
 eyre = "0.6.12"
+embedding = { path = "embedding" }
 storage_client = { path = "storage_client" }
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }

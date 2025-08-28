@@ -1,6 +1,6 @@
-use ell
-mbedding::{EmbeddingError, EmbeddingModel};
+use embedding::{EmbeddingError, EmbeddingModel};
 use qdrant_client::Payload;
+use std::collections::HashMap;
 
 use crate::storage::{TOPIC_CONTENT_KEY, TOPIC_NAME_KEY};
 
@@ -64,10 +64,10 @@ impl<T: EmbeddingModel> TopicStorage<T> {
             .await
             .map_err(|e| TopicStorageError::EmbeddingError(e))?;
 
-        let payload: Payload = serde_json::json!({
-            TOPIC_NAME_KEY: topic_name,
-            TOPIC_CONTENT_KEY: content,
-        })
+        let payload: Payload = HashMap::from([
+            (TOPIC_NAME_KEY.to_string(), topic_name.into()),
+            (TOPIC_CONTENT_KEY.to_string(), content.into()),
+        ])
         .try_into()
         .map_err(|_| {
             TopicStorageError::QdrantError(
