@@ -8,13 +8,12 @@ use eyre::{Result, WrapErr};
 /// through CLI subcommands, which can then be converted into EmbeddingModel
 /// instances for use with the storage system.
 ///
-/// # Examples
-///
-/// ```bash
 /// # Use HuggingFace provider
+/// 
 /// qdrant-cli provider hugging-face --api-key YOUR_KEY --embedding-endpoint "https://..."
 ///
 /// # Use self-hosted provider
+/// 
 /// qdrant-cli provider self-hosted --embedding-endpoint "http://localhost:8000"
 /// ```
 #[derive(Subcommand, Debug)]

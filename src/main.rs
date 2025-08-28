@@ -1,14 +1,14 @@
 use clap::{Parser, Subcommand};
 use eyre::Result;
-use storage_client::TopicStorage;
 
 mod providers;
-
+mod daemon;
 
 #[derive(Parser)]
 #[command(name = "qdrant-cli")]
 #[command(about)]
 #[command(version)]
+
 /// CLI for Qdrant-based topic storage
 struct Cli {
     #[command(subcommand)]
@@ -19,41 +19,55 @@ struct Cli {
     qdrant_endpoint: String,
 }
 
-#[derive(Subcommand)]
+/// Main CLI commands for the Qdrant-based topic storage system
+#[derive(Subcommand, Debug)]
 pub(crate) enum Commands {
+    /// Manage ideas and topics
     Idea {
         #[command(subcommand)]
         subcommand: IdeaCommands,
     },
+    /// Configure embedding model providers
     Provider {
         #[command(subcommand)]
         subcommand: providers::Provider,
     },
 }
 
-#[derive(Subcommand)]
+/// Commands for managing ideas within topics
+#[derive(Subcommand, Debug)]
 pub(crate) enum IdeaCommands {
+    /// Create a new idea in a topic
     New {
         #[arg(short, long)]
+        /// Name of the topic to create the idea in
         topic: String,
+        /// Content of the idea
         content: String,
     },
 
+    /// Search for ideas across topics or within a specific topic
     Search {
         #[arg(short, long)]
+        /// Optional topic to search within (searches all topics if not specified)
         topic: Option<String>,
 
         #[arg(short, long, default_value = "10")]
+        /// Maximum number of search results to return
         limit: u64,
 
+        /// Search query to find matching ideas
         query: String,
     },
 
+    /// List all ideas within a specific topic
     List {
         #[arg(short, long)]
+        /// Name of the topic to list ideas from
         topic: String,
 
         #[arg(short, long, default_value = "10")]
+        /// Maximum number of ideas to list
         limit: u32,
     },
 }
@@ -115,16 +129,19 @@ async fn main() -> Result<()> {
                 }
             }
         },
-        
+
         Commands::Provider { subcommand } => {
             println!("Creating embedding model from provider configuration...");
             let embedding_model = subcommand.into_embedding_model().await?;
             println!("✅ Embedding model created successfully!");
             // Example:
             // let storage = TopicStorage::new(&cli.qdrant_endpoint, embedding_model).await?;
-            
+
             // For demonstration, just print the model type
-            println!("Model type: {:?}", std::any::type_name_of_val(&*embedding_model));
+            println!(
+                "Model type: {:?}",
+                std::any::type_name_of_val(&*embedding_model)
+            );
         }
     }
 
