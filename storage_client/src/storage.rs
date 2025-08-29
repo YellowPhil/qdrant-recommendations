@@ -2,10 +2,10 @@ use eyre::{Result, WrapErr};
 use qdrant_client::{
     Payload, Qdrant,
     qdrant::{
-         Condition, CreateCollectionBuilder, Distance,
-        Filter, PointStruct, QueryPointsBuilder, RetrievedPoint,
-        ScalarQuantizationBuilder, ScoredPoint, ScrollPointsBuilder, 
-        SearchPointsBuilder, UpsertPointsBuilder,  VectorParamsBuilder,
+        CollectionInfo, Condition, CreateCollectionBuilder, DeletePointsBuilder, Distance, Filter,
+        GetCollectionInfoRequest, GetCollectionInfoResponse, PointStruct, PointsIdsList,
+        QueryPointsBuilder, RetrievedPoint, ScalarQuantizationBuilder, ScoredPoint,
+        ScrollPointsBuilder, SearchPointsBuilder, UpsertPointsBuilder, VectorParamsBuilder,
     },
 };
 
@@ -115,23 +115,33 @@ impl Storage {
             .search_points(
                 SearchPointsBuilder::new(collection_name, query, limit)
                     .with_vectors(false)
-                    .with_payload(true)
+                    .with_payload(true),
             )
             .await
             .wrap_err("Failed to search points")?;
         Ok(response.result)
     }
-
+    pub(crate) async fn delete_point(&self, collection_name: &str, point_id: u64) -> Result<()> {
+        self.client
+            .delete_points(
+                DeletePointsBuilder::new(collection_name).points(PointsIdsList {
+                    ids: vec![point_id.into()],
+                }),
+            )
+            .await
+            .wrap_err("Failed to delete point")?;
+        Ok(())
+    }
     pub(crate) async fn get_collection_info(
         &self,
         collection_name: &str,
-    ) -> Result<Option<qdrant_client::qdrant::CollectionInfo>> {
-        let info = self
+    ) -> Result<Option<CollectionInfo>> {
+        Ok(self
             .client
             .collection_info(collection_name)
             .await
-            .wrap_err("Failed to get collection info")?;
-        Ok(info.result)
+            .wrap_err("Failed to retrieve collection info")?
+            .result)
     }
 
     pub(crate) async fn delete_collection(&self, collection_name: &str) -> Result<()> {

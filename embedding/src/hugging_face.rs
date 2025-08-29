@@ -27,7 +27,7 @@ impl HuggingFace {
 
 #[async_trait::async_trait]
 impl EmbeddingModel for HuggingFace {
-    async fn embed(&self, input: String) -> Result<Vec<f32>, EmbeddingError> {
+    async fn embed(&self, input: &str) -> Result<Vec<f32>, EmbeddingError> {
         let response = self
             .client
             .post(&self.endpoint)

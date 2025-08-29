@@ -11,5 +11,5 @@ type Result<T> = std::result::Result<T, EmbeddingError>;
 
 #[async_trait::async_trait]
 pub trait EmbeddingModel {
-    async fn embed(&self, input: String) -> Result<Vec<f32>>;
+    async fn embed(&self, input: &str) -> Result<Vec<f32>>;
 }
