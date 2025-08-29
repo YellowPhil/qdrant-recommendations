@@ -329,6 +329,14 @@ dependencies = [
 [[package]]
 name = "daemon"
 version = "0.1.0"
+dependencies = [
+ "bincode",
+ "daemonize",
+ "embedding",
+ "eyre",
+ "interprocess",
+ "storage_client",
+]
 
 [[package]]
 name = "daemonize"
@@ -1381,7 +1389,6 @@ version = "0.1.0"
 dependencies = [
  "bincode",
  "clap",
- "daemonize",
  "embedding",
  "eyre",
  "interprocess",

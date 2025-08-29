@@ -12,6 +12,5 @@ eyre = "0.6.12"
 embedding = { path = "embedding" }
 storage_client = { path = "storage_client" }
 tokio = { version = "1.47.1", features = ["macros", "rt-multi-thread"] }
-daemonize = "0.5.0"
 interprocess = "2.2.3"
 bincode = "2.0.1"
